@@ -167,26 +167,7 @@ struct DailySummaryView: View {
             VStack(spacing: 20) {
                 headerSection
                 dateSelectionSection
-                
-                if dailyAnalyzer.summary != nil {
-                    analysisSummarySection
-                } else if !dailyAnalyzer.statusMessage.isEmpty {
-                    // Empty or Error State
-                    VStack(spacing: 16) {
-                        Image(systemName: "chart.bar.xaxis")
-                            .font(.system(size: 40))
-                            .foregroundStyle(.secondary)
-                        
-                        Text(dailyAnalyzer.statusMessage)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(10)
-                }
-                
+                analysisSummarySection
                 Spacer()
             }
             .padding()

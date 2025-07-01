@@ -132,8 +132,17 @@ class DailyBehaviorAnalyzer: ObservableObject {
             statusMessage = "Found \(files.count) behavioral analysis files"
         }
         
-        guard !files.isEmpty else {
-            throw AnalysisError.noFilesFound(date: date)
+        if files.isEmpty {
+            return DailySummary(
+                date: date,
+                multiplyingCount: 0,
+                diminishingCount: 0,
+                accidentallyDiminishingCount: 0,
+                totalBehaviors: 0,
+                keyInsights: ["No behaviors recorded for this date"],
+                rawAnalysisContent: "No analysis data available for this date",
+                sessionsAnalyzed: 0
+            )
         }
         
         // Step 2: Extract analysis content from each file
