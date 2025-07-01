@@ -8,6 +8,7 @@ struct DailySummaryView: View {
     @Environment(\.scenePhase) private var scenePhase
     // State for UI controls
     @State private var showRawAnalysis = false
+    @State private var showWeeklySummary = false
     
     private func cleanup() {
         // Cancel any ongoing analysis
@@ -43,6 +44,12 @@ struct DailySummaryView: View {
                     .foregroundStyle(.primary)
                 
                 Spacer()
+                
+                Toggle(isOn: $showWeeklySummary) {
+                    Label("Show Weekly", systemImage: "calendar.badge.clock")
+                }
+                .toggleStyle(.button)
+                .controlSize(.small)
             }
             
             HStack(spacing: 12) {
@@ -162,11 +169,21 @@ struct DailySummaryView: View {
         .padding()
     }
     
+    private var weeklySummarySection: some View {
+        WeeklySummaryView(weekStart: startOfWeek(for: selectedDate))
+            .padding(.vertical)
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 headerSection
                 dateSelectionSection
+                
+                if showWeeklySummary {
+                    weeklySummarySection
+                }
+                
                 analysisSummarySection
                 Spacer()
             }
@@ -183,6 +200,12 @@ struct DailySummaryView: View {
                 cleanup()
             }
         }
+    }
+    
+    private func startOfWeek(for date: Date) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        return calendar.date(from: components) ?? date
     }
 }
 

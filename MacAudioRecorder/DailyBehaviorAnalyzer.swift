@@ -63,6 +63,7 @@ class DailyBehaviorAnalyzer: ObservableObject {
     
     private let documentsPath: URL
     private var currentAnalysisTask: Task<Void, Never>?
+    private let cache = BehaviorAnalysisCache.shared
     
     // MARK: - Initialization
     
@@ -79,6 +80,25 @@ class DailyBehaviorAnalyzer: ObservableObject {
     
     /// Analyzes all behavioral files for a specific date
     func analyzeBehaviors(for date: Date) async {
+        // First check if we have cached data
+        if let cachedSummary = cache.getAnalysis(for: date) {
+            await MainActor.run {
+                statusMessage = "✅ Retrieved cached analysis for \(formatDate(date))"
+                self.summary = DailySummary(
+                    date: cachedSummary.date,
+                    multiplyingCount: cachedSummary.multiplyingCount,
+                    diminishingCount: cachedSummary.diminishingCount,
+                    accidentallyDiminishingCount: cachedSummary.accidentallyDiminishingCount,
+                    totalBehaviors: cachedSummary.totalBehaviors,
+                    keyInsights: [], // We don't cache insights
+                    rawAnalysisContent: "", // We don't cache raw content
+                    sessionsAnalyzed: cachedSummary.sessionsAnalyzed
+                )
+                isAnalyzing = false
+            }
+            return
+        }
+        
         // Cancel any existing analysis
         cancelAnalysis()
         
@@ -94,6 +114,9 @@ class DailyBehaviorAnalyzer: ObservableObject {
                 // Check for cancellation before updating state
                 guard !Task.isCancelled else { return }
                 
+                // Cache the results
+                cache.addAnalysis(summary)
+                
                 await MainActor.run {
                     self.summary = summary
                     statusMessage = "✅ Daily analysis complete: \(summary.totalCount) behaviors found"
@@ -108,6 +131,11 @@ class DailyBehaviorAnalyzer: ObservableObject {
                 }
             }
         }
+    }
+    
+    /// Get analysis for a date range
+    func getAnalysisForRange(from startDate: Date, to endDate: Date) -> [DailyAnalysisCache] {
+        return cache.getAnalyses(from: startDate, to: endDate)
     }
     
     /// Cancels any ongoing analysis
@@ -283,5 +311,13 @@ class DailyBehaviorAnalyzer: ObservableObject {
                 return "No behavioral analysis files found for \(formatter.string(from: date))"
             }
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
     }
 }
