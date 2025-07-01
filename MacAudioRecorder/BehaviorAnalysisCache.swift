@@ -8,6 +8,7 @@ struct DailyAnalysisCache: Codable {
     let accidentallyDiminishingCount: Int
     let totalBehaviors: Int
     let sessionsAnalyzed: Int
+    let rawAnalysisContent: String
     
     init(from summary: DailyBehaviorAnalyzer.DailySummary) {
         self.date = summary.date
@@ -16,6 +17,7 @@ struct DailyAnalysisCache: Codable {
         self.accidentallyDiminishingCount = summary.accidentallyDiminishingCount
         self.totalBehaviors = summary.totalBehaviors
         self.sessionsAnalyzed = summary.sessionsAnalyzed
+        self.rawAnalysisContent = summary.rawAnalysisContent
     }
 }
 

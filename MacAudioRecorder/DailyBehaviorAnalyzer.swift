@@ -91,7 +91,7 @@ class DailyBehaviorAnalyzer: ObservableObject {
                     accidentallyDiminishingCount: cachedSummary.accidentallyDiminishingCount,
                     totalBehaviors: cachedSummary.totalBehaviors,
                     keyInsights: [], // We don't cache insights
-                    rawAnalysisContent: "", // We don't cache raw content
+                    rawAnalysisContent: cachedSummary.rawAnalysisContent, // Use the cached raw content
                     sessionsAnalyzed: cachedSummary.sessionsAnalyzed
                 )
                 isAnalyzing = false
