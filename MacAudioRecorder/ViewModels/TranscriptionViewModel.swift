@@ -86,21 +86,6 @@ final class TranscriptionViewModel: ObservableObject {
         let fileName = "transcript-\(currentSessionId).txt"
         let fileURL = documentsPath.appendingPathComponent(fileName)
         
-        /*
-        let neuroKickFolder = documentsPath.appendingPathComponent("NeuroKick_Results")
-        
-        // Create NeuroKick_Results folder if it doesn't exist
-        do {
-            try FileManager.default.createDirectory(at: neuroKickFolder, withIntermediateDirectories: true, attributes: nil)
-        } catch {
-            print("❌ Failed to create NeuroKick_Results folder: \(error)")
-            return
-        }
-        
-        let fileName = "NeuroKick_Transcript_\(currentSessionId).txt"
-        let fileURL = neuroKickFolder.appendingPathComponent(fileName)
-        
-        */
         let content = """
         === NEUROKICK MEETING TRANSCRIPT ===
         Session: \(currentSessionId)
