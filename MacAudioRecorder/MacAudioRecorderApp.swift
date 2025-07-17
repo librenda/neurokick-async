@@ -33,6 +33,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Sessions", systemImage: "list.bullet")
                 }
+            
+            AnalyticsView()
+                .tabItem {
+                    Label("Analytics", systemImage: "chart.xyaxis.line")
+                }
         }
     }
 }
