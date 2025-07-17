@@ -560,120 +560,133 @@ struct ScrollableTimelineChart: View {
     let data: [DailyBehaviorData]
     @Binding var scrollPosition: Date
     
-    var body: some View {
-        Chart {
-            ForEach(data) { dayData in
-                // Multiplying behaviors line (green)
-                LineMark(
-                    x: .value("Date", dayData.date, unit: .day),
-                    y: .value("Count", dayData.multiplying)
-                )
-                .foregroundStyle(.green)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .symbol {
-                    Circle()
-                        .fill(.green)
-                        .frame(width: 6, height: 6)
-                }
-                .symbolSize(30)
-                .interpolationMethod(.catmullRom)
-                
-                // Diminishing behaviors line (red)
-                LineMark(
-                    x: .value("Date", dayData.date, unit: .day),
-                    y: .value("Count", dayData.diminishing)
-                )
-                .foregroundStyle(.red)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .symbol {
-                    Circle()
-                        .fill(.red)
-                        .frame(width: 6, height: 6)
-                }
-                .symbolSize(30)
-                .interpolationMethod(.catmullRom)
-                
-                // Accidental diminishing line (orange)
-                LineMark(
-                    x: .value("Date", dayData.date, unit: .day),
-                    y: .value("Count", dayData.accidental)
-                )
-                .foregroundStyle(.orange)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .symbol {
-                    Circle()
-                        .fill(.orange)
-                        .frame(width: 6, height: 6)
-                }
-                .symbolSize(30)
-                .interpolationMethod(.catmullRom)
-            }
-        }
-        .chartScrollableAxes(.horizontal)
-        .chartXVisibleDomain(length: getVisibleDomainLength())
-        .chartScrollPosition(x: .constant(scrollPosition))
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.month().day())
-            }
-        }
-        .chartYAxis {
-            AxisMarks { value in
-                AxisGridLine()
-                AxisValueLabel()
-            }
-        }
-        .chartLegend(position: .bottom, alignment: .center) {
-            HStack(spacing: 20) {
-                HStack(spacing: 4) {
-                    Rectangle()
-                        .fill(.green)
-                        .frame(width: 20, height: 3)
-                    Text("Multiplying")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                }
-                
-                HStack(spacing: 4) {
-                    Rectangle()
-                        .fill(.red)
-                        .frame(width: 20, height: 3)
-                    Text("Diminishing")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-                
-                HStack(spacing: 4) {
-                    Rectangle()
-                        .fill(.orange)
-                        .frame(width: 20, height: 3)
-                    Text("Accidental")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                }
-            }
-        }
-        .chartBackground { _ in
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.background.secondary.opacity(0.1))
+    // Define chart series for proper legend mapping
+    private let behaviorTypes = ["Multiplying", "Diminishing", "Accidental"]
+    
+    // Flattened data structure for proper Swift Charts series identification
+    private var chartData: [BehaviorDataPoint] {
+        data.flatMap { dayData in
+            [
+                BehaviorDataPoint(date: dayData.date, count: dayData.multiplying, type: "Multiplying"),
+                BehaviorDataPoint(date: dayData.date, count: dayData.diminishing, type: "Diminishing"),
+                BehaviorDataPoint(date: dayData.date, count: dayData.accidental, type: "Accidental")
+            ]
         }
     }
     
-    private func getVisibleDomainLength() -> Int {
-        // Show different amounts based on data size
-        let dataCount = data.count
-        if dataCount <= 7 {
-            return 7 // Show all for week or less
-        } else if dataCount <= 30 {
-            return 14 // Show 2 weeks for month
-        } else {
-            return 30 // Show 1 month for larger datasets
+    private var hasData: Bool {
+        data.contains { $0.total > 0 }
+    }
+    
+    private var totalBehaviors: Int {
+        data.reduce(0) { $0 + $1.total }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Debug info
+            Text("Chart Data: \(data.count) days, \(totalBehaviors) total behaviors")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            if !hasData {
+                // Empty state
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No behavioral data to display")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    Text("Start recording sessions to see behavioral trends")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(height: 280)
+                .frame(maxWidth: .infinity)
+            } else {
+                // Beautiful Swift Charts implementation
+                Chart {
+                    ForEach(chartData, id: \.id) { dataPoint in
+                        LineMark(
+                            x: .value("Date", dataPoint.date),
+                            y: .value("Count", dataPoint.count)
+                        )
+                        .foregroundStyle(by: .value("Behavior Type", dataPoint.type))
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        .symbol(by: .value("Behavior Type", dataPoint.type))
+                        .symbolSize(60)
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+                .frame(height: 280)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: 3600 * 24 * 14) // Show 14 days at once
+                .chartScrollPosition(x: $scrollPosition)
+                .chartForegroundStyleScale([
+                    "Multiplying": .green,
+                    "Diminishing": .red,
+                    "Accidental": .orange
+                ])
+                .chartSymbolScale([
+                    "Multiplying": .circle,
+                    "Diminishing": .square,
+                    "Accidental": .diamond
+                ])
+                .chartXAxis {
+                    AxisMarks(preset: .aligned, values: .stride(by: .day, count: 1)) { value in
+                        AxisGridLine(centered: true, stroke: StrokeStyle(lineWidth: 0.5))
+                            .foregroundStyle(.secondary.opacity(0.3))
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day(), centered: true)
+                            .font(.caption)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(preset: .aligned, position: .leading) { value in
+                        AxisGridLine(centered: true, stroke: StrokeStyle(lineWidth: 0.5))
+                            .foregroundStyle(.secondary.opacity(0.3))
+                        AxisValueLabel()
+                            .font(.caption)
+                    }
+                }
+                .chartLegend(position: .bottom, alignment: .center) {
+                    HStack(spacing: 24) {
+                        ForEach(behaviorTypes, id: \.self) { type in
+                            HStack(spacing: 6) {
+                                let color: Color = type == "Multiplying" ? .green : 
+                                                  type == "Diminishing" ? .red : .orange
+                                let count = data.reduce(0) { sum, day in
+                                    sum + (type == "Multiplying" ? day.multiplying :
+                                           type == "Diminishing" ? day.diminishing : day.accidental)
+                                }
+                                
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(color)
+                                    .frame(width: 16, height: 3)
+                                
+                                Text("\(type) (\(count))")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .animation(.easeInOut(duration: 0.3), value: data.count)
+            }
         }
     }
 }
 
-// MARK: - Data Models (Keep existing)
+// MARK: - Data Models
+
+/// Data point for Swift Charts series identification
+struct BehaviorDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let count: Int
+    let type: String
+}
 
 /// Simple data structure for daily behavioral counts
 struct DailyBehaviorData: Identifiable {
