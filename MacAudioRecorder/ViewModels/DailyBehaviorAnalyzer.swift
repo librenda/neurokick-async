@@ -37,7 +37,7 @@ class DailyBehaviorAnalyzer: ObservableObject {
     // MARK: - Published Properties
     
     @Published var isAnalyzing = false
-    @Published private(set) var summary: DailySummary?
+    @Published var summary: DailySummary?
     @Published var statusMessage = ""
     
     // MARK: - Computed Properties
