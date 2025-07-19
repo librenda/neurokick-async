@@ -245,7 +245,7 @@ struct AnalyticsView: View {
             if !timelineData.isEmpty {
                 let totalMultiplying = timelineData.reduce(0) { $0 + $1.multiplying }
                 let totalDiminishing = timelineData.reduce(0) { $0 + $1.diminishing }
-                let totalAccidental = timelineData.reduce(0) { $0 + $1.accidental }
+                let totalAccidental = timelineData.reduce(0) { $0 + $1.accidentallyDiminishing }
                 
                 HStack(spacing: 20) {
                     VStack {
@@ -306,7 +306,7 @@ struct AnalyticsView: View {
                         .foregroundColor(.secondary)
                     
                     if let firstDataDay = timelineData.first(where: { $0.total > 0 }) {
-                        Text("First data: \(formatDate(firstDataDay.date)) - M:\(firstDataDay.multiplying) D:\(firstDataDay.diminishing) AD:\(firstDataDay.accidental)")
+                        Text("First data: \(formatDate(firstDataDay.date)) - M:\(firstDataDay.multiplying) D:\(firstDataDay.diminishing) AD:\(firstDataDay.accidentallyDiminishing)")
                             .font(.caption)
                             .foregroundColor(.blue)
                     }
@@ -416,7 +416,7 @@ struct AnalyticsView: View {
                     date: currentDate,
                     multiplying: analysis.multiplyingCount,
                     diminishing: analysis.diminishingCount,
-                    accidental: analysis.accidentallyDiminishingCount
+                    accidentallyDiminishing: analysis.accidentallyDiminishingCount
                 )
             } else {
                 // No cached data - scan files directly for this date
@@ -425,7 +425,7 @@ struct AnalyticsView: View {
                     date: currentDate,
                     multiplying: behaviorCounts.multiplying,
                     diminishing: behaviorCounts.diminishing,
-                    accidental: behaviorCounts.accidentallyDiminishing
+                    accidentallyDiminishing: behaviorCounts.accidentallyDiminishing
                 )
             }
             results.append(dailyData)
@@ -448,6 +448,7 @@ struct AnalyticsView: View {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateString = dateFormatter.string(from: date)
         
+        // Use the same document directory as the app for consistency
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         
         do {
@@ -464,6 +465,10 @@ struct AnalyticsView: View {
             print("📂 Total files in documents: \(files.count)")
             print("🎯 Looking for pattern: Behavioral-\(dateString)-*.txt")
             print("✅ Found behavioral files: \(behaviorFiles.count)")
+            
+            // Debug: List first few files to see what's there
+            let fileNames = files.prefix(10).map { $0.lastPathComponent }
+            print("📄 Sample files: \(fileNames)")
             
             for file in behaviorFiles {
                 print("   📄 \(file.lastPathComponent)")
@@ -510,12 +515,12 @@ struct AnalyticsView: View {
                 let fullMatch = nsContent.substring(with: match.range)
                 let multiplying = Int(nsContent.substring(with: match.range(at: 1))) ?? 0
                 let diminishing = Int(nsContent.substring(with: match.range(at: 2))) ?? 0
-                let accidental = Int(nsContent.substring(with: match.range(at: 3))) ?? 0
+                let accidentallyDiminishing = Int(nsContent.substring(with: match.range(at: 3))) ?? 0
                 
                 print("      ✅ Found: '\(fullMatch)'")
-                print("      📊 Extracted: M:\(multiplying) D:\(diminishing) AD:\(accidental)")
+                print("      📊 Extracted: M:\(multiplying) D:\(diminishing) AD:\(accidentallyDiminishing)")
                 
-                return (multiplying, diminishing, accidental)
+                return (multiplying, diminishing, accidentallyDiminishing)
             } else {
                 print("      ❌ No Net Tilt pattern found")
                 // Show a snippet of the content to help debug
@@ -534,7 +539,7 @@ struct AnalyticsView: View {
         let totalBehaviors = timelineData.reduce(0) { $0 + $1.total }
         let totalMultiplying = timelineData.reduce(0) { $0 + $1.multiplying }
         let totalDiminishing = timelineData.reduce(0) { $0 + $1.diminishing }
-        let totalAccidental = timelineData.reduce(0) { $0 + $1.accidental }
+        let totalAccidental = timelineData.reduce(0) { $0 + $1.accidentallyDiminishing }
         
         // Create a summary that matches the timeline data
         let timelineStartDate = timelineData.first?.date ?? Date()
@@ -569,7 +574,7 @@ struct ScrollableTimelineChart: View {
             [
                 BehaviorDataPoint(date: dayData.date, count: dayData.multiplying, type: "Multiplying"),
                 BehaviorDataPoint(date: dayData.date, count: dayData.diminishing, type: "Diminishing"),
-                BehaviorDataPoint(date: dayData.date, count: dayData.accidental, type: "Accidental")
+                BehaviorDataPoint(date: dayData.date, count: dayData.accidentallyDiminishing, type: "Accidental")
             ]
         }
     }
@@ -657,7 +662,7 @@ struct ScrollableTimelineChart: View {
                                                   type == "Diminishing" ? .red : .orange
                                 let count = data.reduce(0) { sum, day in
                                     sum + (type == "Multiplying" ? day.multiplying :
-                                           type == "Diminishing" ? day.diminishing : day.accidental)
+                                           type == "Diminishing" ? day.diminishing : day.accidentallyDiminishing)
                                 }
                                 
                                 RoundedRectangle(cornerRadius: 2)
@@ -694,10 +699,10 @@ struct DailyBehaviorData: Identifiable {
     let date: Date
     let multiplying: Int
     let diminishing: Int
-    let accidental: Int
+    let accidentallyDiminishing: Int
     
     var total: Int {
-        multiplying + diminishing + accidental
+        multiplying + diminishing + accidentallyDiminishing
     }
 }
 
